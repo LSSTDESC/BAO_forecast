@@ -42,7 +42,7 @@ class BAOBin:
 # Individual-bin BAO error calculator
 # ---------------------------------------------------------
 
-def bao_error(z_min, z_max, n_gal, sigma_z, bias, area_deg2, cosmo, recon_factor=1.0, sigma8_fid=0.8):
+def IndividualBAOError(z_min, z_max, n_gal, sigma_z, bias, area_deg2, cosmo, recon_factor=1.0, sigma8_fid=0.8):
 
     z = 0.5 * (z_min + z_max)
 
@@ -51,10 +51,8 @@ def bao_error(z_min, z_max, n_gal, sigma_z, bias, area_deg2, cosmo, recon_factor
     # -----------------------------------------------------
 
     fsky = area_deg2 / (4 * np.pi * (180 / np.pi)**2)
-
     chi_min = cosmo.comoving_radial_distance(1.0 / (1.0 + z_min)) * cosmo["h"]
     chi_max = cosmo.comoving_radial_distance(1.0 / (1.0 + z_max)) * cosmo["h"]
-
     volume = (4.0 * np.pi / 3.0 * fsky * (chi_max**3 - chi_min**3)) / 1e9
 
     # -----------------------------------------------------
@@ -62,7 +60,6 @@ def bao_error(z_min, z_max, n_gal, sigma_z, bias, area_deg2, cosmo, recon_factor
     # -----------------------------------------------------
 
     D = cosmo.growth_factor(1.0 / (1.0 + z))
-
     f = cosmo.growth_rate(1.0 / (1.0 + z))
     beta = f / bias
 
@@ -72,20 +69,15 @@ def bao_error(z_min, z_max, n_gal, sigma_z, bias, area_deg2, cosmo, recon_factor
     nP = nbar * power
 
     # -----------------------------------------------------
-    # Reconstruction damping
+    # BAO damping from non-linear evolution
     # -----------------------------------------------------
 
     sigma0 = (12.4 * sigma8_fid / 0.9 * D * 0.758 * recon_factor)
-
-    sigma_perp2 = sigma0**2
-    sigma_par2 = sigma0**2
-
-    # -----------------------------------------------------
-    # Photo-z damping
-    # -----------------------------------------------------
-
+    sigma_par = sigma0# * (1 + f)
+    sigma_per = sigma0
     sigma_z_dist = 2997.92458 / cosmo.h_over_h0(1.0 / (1.0 + z)) * sigma_z
     sigma_z_bao = sigma_z_dist / (cosmo.comoving_radial_distance(1.0 / (1.0 + z)) * cosmo["h"]) * 105.0
+    sigma2_tot = (sigma_par**2 * mu_vector**2 + sigma_per**2 * (1.0 - mu_vector**2) + 0.5 * sigma_z_bao**2)
 
     # -----------------------------------------------------
     # BAO damping from photo-z smearing
@@ -102,31 +94,21 @@ def bao_error(z_min, z_max, n_gal, sigma_z, bias, area_deg2, cosmo, recon_factor
         )
 
     # -----------------------------------------------------
-    # μ integration
+    # Silk damping
+    # -----------------------------------------------------
+
+    silk = np.exp(-2.0 * (k_vector * silk_BAO)**1.4)
+    
+    # -----------------------------------------------------
+    # Double integral
     # -----------------------------------------------------
 
     rsd = (1.0 + beta * mu_vector**2)**2
-
-    sigma2_tot = (sigma_perp2 * (1.0 - mu_vector**2) + sigma_par2 * mu_vector**2 + 0.5 * sigma_z_bao**2)
-
-    # shape: (nk, nmu)
     tmp = (pk_BAO[:, None] + np.exp(k_vector[:, None]**2 * sigma_z_dist**2 * mu_vector**2) / (nP * rsd))
-
-    # -----------------------------------------------------
-    # Silk damping + photo-z smearing damping
-    # -----------------------------------------------------
-
-    silk = (np.exp(-2.0 * (k_vector * silk_BAO)**1.4) * k_vector**2 * sigzdampl**2)
     
-    # -----------------------------------------------------
-    # Fisher integrand
-    # -----------------------------------------------------
-
-    fisher_integrand = (silk[:, None] * np.exp(-k_vector[:, None]**2 * sigma2_tot) / tmp**2)
-
-    fisher = fisher_integrand.sum()
-
-    fisher *= (amp_BAO**2 * 1e9 * k_step * mu_step * volume / 2.0)
+    fisher_integrand = (k_vector[:, None]**2 * sigzdampl[:, None]**2 * silk[:, None] * np.exp(-k_vector[:, None]**2 * sigma2_tot) / tmp**2)
+    fisher = np.trapz(np.trapz(fisher_integrand, mu_vector), k_vector)
+    fisher *= (amp_BAO**2 * 1e9 * volume / 2.0)
 
     return 1.0 / np.sqrt(fisher)
 
@@ -134,13 +116,13 @@ def bao_error(z_min, z_max, n_gal, sigma_z, bias, area_deg2, cosmo, recon_factor
 # BAO error combiner
 # ---------------------------------------------------------
 
-def combined_bao_error(bins, area_deg2, cosmo, recon_factor=1.0, sigma8_fid=0.8):
+def CombinedBAOError(bins, area_deg2, cosmo, recon_factor=1.0, sigma8_fid=0.8):
 
     fisher_sum = 0.0
 
     for b in bins:
 
-        err = bao_error(
+        err = IndividualBAOError(
             z_min=b.z_min,
             z_max=b.z_max,
             n_gal=b.n_gal,
@@ -164,31 +146,33 @@ def BAOdampsigz(z, sigma_z, cosmo, nthbin=50, dz=0.01, z_max=3.0):
 
     chi_z = cosmo.comoving_radial_distance(1.0 / (1.0 + z)) * cosmo["h"]
 
-    dth = 16.0 * np.pi / nthbin
-    theta = 0.5 * dth + dth * np.arange(nthbin)
+    # angular grid
+    theta = (np.arange(nthbin) + 0.5) * (16.0 * np.pi / nthbin)
 
-    cl0 = np.cos(theta)
+    # redshift grid
+    zj = (np.arange(int(z_max / dz)) + 0.5) * dz
 
-    nzbin = int(z_max / dz)
-    zj = 0.5 * dz + dz * np.arange(nzbin)
-
+    # Gaussian redshift kernel
     gz = (
         dz / np.sqrt(2.0 * np.pi * sigma_z**2)
-        * np.exp(-(z - zj)**2 / (2.0 * sigma_z**2))
+        * np.exp(-(z - zj) ** 2 / (2.0 * sigma_z**2))
     )
 
     chi_j = cosmo.comoving_radial_distance(1.0 / (1.0 + zj)) * cosmo["h"]
 
-    arg = theta[:, None] * (chi_j / chi_z)
+    # projection
+    cl = np.sum(
+        gz[None, :] * np.cos(theta[:, None] * (chi_j / chi_z)),
+        axis=1
+    )
 
-    cl = np.sum(gz[None, :] * np.cos(arg), axis=1)
-
-    norm = np.sum(cl**2) * dth / np.pi / 3.0
+    cl0 = np.cos(theta)
+    norm = np.sum(cl**2) * (16.0 * np.pi / nthbin) / np.pi / 3.0
 
     out = cl / cl0
 
     if sigma_z < 0.01 and norm < 0.1:
-        out = np.ones(nthbin)
+        return np.ones(nthbin)
 
     return out
     
