@@ -39,22 +39,40 @@ if pk_implementation == "old":
 
     silk_BAO = 7.76 # in Mpc/h
 
+    sigma0 = 12.4 * cosmo.sigma8_m / 0.9 * 0.758 # the 12.4 is in Mpc/h. The 0.9 is sigma_8. See page 4 of https://arxiv.org/pdf/astro-ph/0701079
+
+    amp_BAO = 0.5 # approximate, see page 10 of https://arxiv.org/pdf/astro-ph/0701079 for details
+
 elif pk_implementation == "new":
 
     pkz = cosmo.get_fourier(engine="class").pk_interpolator()
-    pk = pkz.to_1d(z=0)
+    pk = pkz.to_1d(z=0.0)
     power_BAO = pk(0.2) # at 0.2 h/Mpc. In (Mpc/h)^3
 
     kh_step = 0.01
     kh_vector = kh_step * (np.arange(50 * 0.01 / kh_step) + 0.5) # in h/Mpc. k binning used in https://arxiv.org/pdf/astro-ph/0701079 (see page 9)
-    # kh_vector = 10**np.linspace(np.log10(10**-4 / cosmo.h), np.log10(10**2), 5*10**2) # in h/Mpc. Will give the same result as the previous kh_vector
-    
+    # kh_vector = 10**np.linspace(np.log10(10**-4 / cosmo.h), np.log10(10**2), 5*10**2) # in h/Mpc. Gives the same result as the previous kh_vector
+
     pk_BAO = pk(kh_vector) / power_BAO # dimensionless
 
+    # Calculate the Silk scale
     silk_BAO = 1.0 / (1.6 * (cosmo.Omega0_b * cosmo.h**2)**0.52 * (cosmo.Omega0_m * cosmo.h**2)**0.73 * 
                       (1.0 + (10.4 * cosmo.Omega0_m * cosmo.h**2)**-0.95) / cosmo.h) # page 9 of https://arxiv.org/pdf/astro-ph/0701079. In Mpc/h
+
+    print(f"Calculated Silk scale: {silk_BAO:.2f} Mpc/h")
+    print(f"Value used by Seo & Eisenstein (2007): {7.76} Mpc/h")  
+    print()
+
+    # Calculate Sigma_0
+    kh_vector_sigma0 = 10**np.linspace(np.log10(10**-4 / cosmo.h), np.log10(10**2), 10**3) # in h/Mpc. Gives the same result as the previous kh_vector
+    sigma0 = np.sqrt(np.trapz(pk(kh_vector_sigma0), kh_vector_sigma0) / (6.0 * np.pi**2)) # in Mpc/h
+    sigma0 *= np.sqrt(2) # because the damping in eq. 4 of https://arxiv.org/pdf/astro-ph/0701079 is exp(-0.5*k**2*Sigma**2)
     
-amp_BAO = 0.5 # approximate, see page 10 of https://arxiv.org/pdf/astro-ph/0701079 for details
+    print(f"Calculated Sigma_0: {sigma0:.2f} Mpc/h")
+    print(f"Value used by Seo & Eisenstein (2007): {(12.4 * cosmo.sigma8_m / 0.9 * 0.758):.2f} Mpc/h")
+    print()
+    
+    amp_BAO = 0.4529 # approximate, see page 10 of https://arxiv.org/pdf/astro-ph/0701079 for details
 
 mu_vector = np.linspace(0.0, 1.0, 10**4)
 
@@ -62,7 +80,7 @@ mu_vector = np.linspace(0.0, 1.0, 10**4)
 # Individual-bin BAO error calculator
 # ---------------------------------------------------------
 
-def IndividualBAOError(z_min, z_max, n_gal, sigma_z, bias, area, recon_factor=1.0):
+def IndividualBAOError(z_min, z_max, n_gal, sigma_z, bias, area):
 
     z = 0.5 * (z_min + z_max)
 
@@ -70,7 +88,7 @@ def IndividualBAOError(z_min, z_max, n_gal, sigma_z, bias, area, recon_factor=1.
     # Survey volume
     # -----------------------------------------------------
 
-    fsky = area / (4 * np.pi * (180 / np.pi)**2)
+    fsky = area / (4.0 * np.pi * (180.0 / np.pi)**2)
     chi_min = cosmo.comoving_radial_distance(z_min) # in Mpc/h
     chi_max = cosmo.comoving_radial_distance(z_max) # in Mpc/h
     volume = (4.0 * np.pi / 3.0 * fsky * (chi_max**3 - chi_min**3)) # in (Mpc/h)^3
@@ -92,9 +110,8 @@ def IndividualBAOError(z_min, z_max, n_gal, sigma_z, bias, area, recon_factor=1.
     # BAO damping from non-linear evolution
     # -----------------------------------------------------
 
-    sigma0 = (12.4 * cosmo.sigma8_m / 0.9 * D * 0.758 * recon_factor) # the 12.4 is in Mpc/h. The 0.9 is sigma_8. See page 4 of https://arxiv.org/pdf/astro-ph/0701079
-    sigma_par = sigma0 * (1 + f)
-    sigma_per = sigma0
+    sigma_par = sigma0 * D * (1.0 + f)
+    sigma_per = sigma0 * D
     sigma_z_dist = 2997.92458 / cosmo.efunc(z) * sigma_z # in Mpc/h
     sigma_z_bao = sigma_z_dist / cosmo.comoving_radial_distance(z) * cosmo.rs_drag # in Mpc/h
     sigma2_tot = (sigma_par**2 * mu_vector**2 + sigma_per**2 * (1.0 - mu_vector**2) + 0.5 * sigma_z_bao**2) # in (Mpc/h)^2
@@ -118,8 +135,8 @@ def IndividualBAOError(z_min, z_max, n_gal, sigma_z, bias, area, recon_factor=1.
     R = (1.0 + beta * mu_vector**2)**2 * np.exp(-kh_vector[:, None]**2 * mu_vector**2 * sigma_z_dist**2) # eq. 27 from https://arxiv.org/pdf/astro-ph/0701079. Dimensionless
     denom = pk_BAO[:, None] + 1.0 / (nP * R) # dimensionless
     
-    # base = (kh_vector[:, None]**2 * silk[:, None] * np.exp(-kh_vector[:, None]**2 * sigma2_tot * sigzdampl[:, None]**2) / denom**2)
-    base = (kh_vector[:, None]**2 * silk[:, None] * np.exp(-kh_vector[:, None]**2 * sigma2_tot) / denom**2) # in (h/Mpc)^2
+    # base = kh_vector[:, None]**2 * silk[:, None] * np.exp(-kh_vector[:, None]**2 * sigma2_tot) * sigzdampl[:, None]**2 / denom**2 # in (h/Mpc)^2
+    base = kh_vector[:, None]**2 * silk[:, None] * np.exp(-kh_vector[:, None]**2 * sigma2_tot) / denom**2 # in (h/Mpc)^2
     
     # -----------------------------------------------------
     # Angular Fisher decompositions
@@ -133,7 +150,7 @@ def IndividualBAOError(z_min, z_max, n_gal, sigma_z, bias, area, recon_factor=1.
     Fhh = np.trapz(np.trapz(Fhh_integrand, mu_vector), kh_vector) # in (h/Mpc)^3
     Fdh = np.trapz(np.trapz(Fdh_integrand, mu_vector), kh_vector) # in (h/Mpc)^3
     
-    prefactor = (amp_BAO**2 * volume / 2.0) # in (Mpc/h)^3. I'm not sure about the 2.0 factor... I don't think it should be there
+    prefactor = (amp_BAO**2 * volume / 2.0) # in (Mpc/h)^3. The factor 1/2 is not in eq. 26 of https://arxiv.org/pdf/astro-ph/0701079, but it can be found in eq. 25 (I think they forgot it in 26)
     
     Fdd *= prefactor # dimensionless
     Fhh *= prefactor # dimensionless
@@ -165,7 +182,7 @@ def IndividualBAOError(z_min, z_max, n_gal, sigma_z, bias, area, recon_factor=1.
 # BAO error combiner
 # ---------------------------------------------------------
 
-def CombinedBAOError(bins, area, recon_factor=1.0):
+def CombinedBAOError(bins, area):
 
     fisher_sum = 0.0
 
@@ -178,7 +195,6 @@ def CombinedBAOError(bins, area, recon_factor=1.0):
             sigma_z=b.sigma_z,
             bias=b.bias,
             area=area,
-            recon_factor=recon_factor,
         )
 
         fisher_sum += 1.0 / err**2
