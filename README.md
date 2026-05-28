@@ -36,7 +36,7 @@ The main input to the forecast consists of:
 
 The BAO Fisher matrix is computed as a double integral over wavenumber $k$ and angle cosine $\mu$:
 
-$$F_{ij} = \frac{A_{\rm BAO}^2 V}{2} \int d\mu \int dk  \frac{k^2\ f_i(\mu)\ f_j(\mu)\ \exp[-2(k\Sigma_{\rm Silk})^{1.4}]\ \exp[-k^2 \Sigma_{\rm nl}^2(\mu)]}{\left[P_{\rm BAO}(k) + \frac{1}{nP\ R(\mu)}\right]^2},$$
+$$F_{ij} = \frac{A_{\rm BAO}^2 V}{2} \int d\mu \int dk  \frac{k^2\ f_i(\mu)\ f_j(\mu)\ \exp[-2(k\Sigma_{\rm Silk})^{1.4}]\ \exp[-k^2 \Sigma_{\rm nl}^2(\mu)]}{\left[P_{\rm BAO}(k) + \frac{1}{nP\ R(k,\mu)}\right]^2},$$
 
 where 
 
@@ -50,11 +50,11 @@ $$V = \frac{4\pi}{3} f_{\rm sky} \left(\chi_{\rm max}^3 - \chi_{\rm min}^3\right
 
 - the shotnoise parameter $nP$ is given by
 
-$$nP = \bar{n} P_{\rm eff}, \quad \bar{n} = \frac{N_{\rm gal}}{V}, \quad P_{\rm eff} = (bD)^2 P(k=0.2\ \text{Mpc}/h)$$
+$$nP = \bar{n} P_{\rm eff},\quad\text{where}\quad\bar{n} = \frac{N_{\rm gal}}{V}\quad\text{and}\quad P_{\rm eff} = (bD)^2 P(k=0.2\ \text{Mpc}/h).$$
 
 - the redshift-space distortion factor is
 
-$$R(\mu)=\left(1+\beta\mu^2\right)^2 \exp[-k^2\mu^2\sigma_z^2].$$
+$$R(k,\mu)=\left(1+\beta\mu^2\right)^2 \exp[-k^2\mu^2\sigma_z^2].$$
 
 - the anisotropic nonlinear damping is
 
