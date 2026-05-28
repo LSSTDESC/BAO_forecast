@@ -9,7 +9,7 @@ Forecasting Baryon Acoustic Oscillation (BAO) distance measurement precision for
 
 # Features
 
-- BAO Fisher forecasting in individual redshift bins.
+- BAO Fisher forecasting in individual redshift bins and combined precision.
 - Automatic cosmology handling via `cosmoprimo`.
 - Includes:
   - redshift-space distortions (RSD),
@@ -36,17 +36,21 @@ The main input to the forecast consists of:
 
 The BAO Fisher matrix is computed as a double integral over wavenumber $k$ and angle cosine $\mu$:
 
-$$F_{ij} = \frac{A_{\rm BAO}^2 V}{2} \int d\mu \int dk  \frac{k^2\ f_i(\mu)\ f_j(\mu)\ \exp[-2(k\Sigma_{\rm Silk})^{1.4}]\ \exp[-k^2 \Sigma_{\rm nl}^2(\mu)]}{\left[P_{\rm BAO}(k) + \frac{1}{nP\ R(\mu)}\right]^2}$$
+$$F_{ij} = \frac{A_{\rm BAO}^2 V}{2} \int d\mu \int dk  \frac{k^2\ f_i(\mu)\ f_j(\mu)\ \exp[-2(k\Sigma_{\rm Silk})^{1.4}]\ \exp[-k^2 \Sigma_{\rm nl}^2(\mu)]}{\left[P_{\rm BAO}(k) + \frac{1}{nP\ R(\mu)}\right]^2},$$
 
 where 
+
+- the angular response functions are
+
+$$f_D(\mu)=1-\mu^2,\quad f_H(\mu)=\mu^2.$$
 
 - the volume is given by
 
 $$V = \frac{4\pi}{3} f_{\rm sky} \left(\chi_{\rm max}^3 - \chi_{\rm min}^3\right),\quad\text{where}\quad f_{\rm sky} = \frac{A(\text{deg}^2)}{4\pi (180/\pi)^2}.$$
 
-- the angular response functions are
+- the shotnoise parameter $nP$ is given by
 
-$$f_D(\mu)=1-\mu^2,\quad f_H(\mu)=\mu^2.$$
+$$nP = \bar{n} P_{\rm eff}, \quad \bar{n} = \frac{N_{\rm gal}}{V}, \quad P_{\rm eff} = (bD)^2 P(k=0.2\ \text{Mpc}/h)$$
 
 - the redshift-space distortion factor is
 
