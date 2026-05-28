@@ -18,7 +18,7 @@ cosmo = Cosmology(
 # BAO template
 # ---------------------------------------------------------
 
-pk_implementation = "new"
+pk_implementation = "old"
 
 if pk_implementation == "old":
 
@@ -99,10 +99,8 @@ def IndividualBAOError(z_min, z_max, n_gal, sigma_z, bias, area):
     f = cosmo.growth_rate(z)
     beta = f / bias
 
-    power = (bias * D)**2 * power_BAO # in (Mpc/h)^3
-
     nbar = n_gal / volume # in (h/Mpc)^3
-    nP = nbar * power # dimensionless
+    nP = nbar * (bias * D)**2 * power_BAO # dimensionless
 
     # -----------------------------------------------------
     # Non-linear BAO damping
@@ -111,9 +109,9 @@ def IndividualBAOError(z_min, z_max, n_gal, sigma_z, bias, area):
     sigma_par = sigma0 * D * (1.0 + f)
     sigma_per = sigma0 * D
     sigma_z_dist = 299792.458 / cosmo.hubble_function(z) * sigma_z * cosmo.h # in Mpc/h
-    sigma2_tot = sigma_par**2 * mu_vector**2 + sigma_per**2 * (1.0 - mu_vector**2) # in (Mpc/h)^2
     # sigma_z_bao = sigma_z_dist / cosmo.comoving_radial_distance(z) * cosmo.rs_drag # in Mpc/h
     # sigma2_tot = sigma_par**2 * mu_vector**2 + sigma_per**2 * (1.0 - mu_vector**2) + 0.5 * sigma_z_bao**2 # in (Mpc/h)^2. The last term was in Ashley's original code but it was never used
+    sigma2_tot = sigma_par**2 * mu_vector**2 + sigma_per**2 * (1.0 - mu_vector**2) # in (Mpc/h)^2
 
     # -----------------------------------------------------
     # Silk damping
