@@ -1,0 +1,54 @@
+# BAO_forecast
+
+Forecasting Baryon Acoustic Oscillation (BAO) distance measurement precision for photometric galaxy surveys using Fisher matrix methods based on Seo & Eisenstein (2007).
+> Seo & Eisenstein (2007)
+> *Improved Forecasts for the Baryon Acoustic Oscillations and Cosmological Distance Scale*
+> https://arxiv.org/abs/astro-ph/0701079
+
+---
+
+# Features
+
+- BAO Fisher forecasting in individual redshift bins.
+- Automatic cosmology handling via `cosmoprimo`.
+- Includes:
+  - redshift-space distortions (RSD),
+  - Silk damping,
+  - non-linear BAO damping,
+  - photo-z smearing.
+- Returns:
+  - transverse distance precision: $$\sigma_D\equiv\sigma(\ln D_M).$$
+
+---
+
+# Forecast Formalism
+
+The BAO Fisher matrix is computed as a double integral over wavenumber $k$ and angle cosine $\mu$:
+
+$$F_{ij} = \frac{A_{\rm BAO}^2 V}{2} \int d\mu \int dk  \frac{k^2\ f_i(\mu)\ f_j(\mu)\ \exp[-2(k\Sigma_{\rm Silk})^{1.4}]\ \exp[-k^2 \Sigma_{\rm nl}^2(\mu)]}{\left[P_{\rm BAO}(k) + \frac{1}{nP\ R(\mu)}\right]^2}$$
+
+where 
+
+- the volume is given by
+
+$$V = \frac{4\pi}{3} f_{\rm sky} \left(\chi_{\rm max}^3 - \chi_{\rm min}^3\right),\quad\text{where}\quad f_{\rm sky} = \frac{A(\text{deg}^2)}{4\pi (180/\pi)^2}.$$
+
+- the angular response functions are
+
+$$f_D(\mu)=1-\mu^2,\quad f_H(\mu)=\mu^2.$$
+
+- the redshift-space distortion factor is
+
+$$R(\mu)=\left(1+\beta\mu^2\right)^2 \exp[-k^2\mu^2\sigma_z^2].$$
+
+- the anisotropic nonlinear damping is
+
+$$\Sigma_{\rm nl}^2(\mu)=\Sigma_\parallel^2\mu^2+\Sigma_\perp^2(1-\mu^2)+\frac{1}{2}\Sigma_z^2,\quad \text{where}\quad \Sigma_\parallel=\Sigma_0 D(1+f)\quad \text{and}\quad\Sigma_\perp=\Sigma_0 D.$$
+
+The correlation coefficient between radial and transverse modes is, then, computed as
+
+$$r=\frac{F_{DH}}{\sqrt{F_{DD}F_{HH}}},$$
+
+and the angular BAO distance uncertainty is
+
+$$\sigma_D=\frac{1}{\sqrt{F_{DD}(1-r^2)}}.$$
