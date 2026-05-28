@@ -58,7 +58,7 @@ $$R(k,\mu)=\left(1+\beta\mu^2\right)^2 \exp[-k^2\mu^2\Sigma_z^2],\quad\text{wher
 
 - the anisotropic nonlinear damping is
 
-$$\Sigma_{\rm nl}^2(\mu)=\Sigma_\parallel^2\mu^2+\Sigma_\perp^2(1-\mu^2)+\frac{1}{2}(\Sigma_z r_d/\chi)^2,\quad \text{where}\quad \Sigma_\parallel=\Sigma_0 D(1+f)\quad\text{and}\quad\Sigma_\perp=\Sigma_0 D$$
+$$\Sigma_{\rm nl}^2(\mu)=\Sigma_\parallel^2\mu^2+\Sigma_\perp^2(1-\mu^2),\quad \text{where}\quad \Sigma_\parallel=\Sigma_0 D(1+f)\quad\text{and}\quad\Sigma_\perp=\Sigma_0 D$$
 
 The correlation coefficient between radial and transverse modes is, then, computed as
 
