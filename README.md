@@ -21,6 +21,17 @@ Forecasting Baryon Acoustic Oscillation (BAO) distance measurement precision for
 
 ---
 
+# Inputs
+
+The main input to the forecast consists of:
+
+- redshift-bin edges $(z_{\min}, z_{\max})$.
+- galaxy number in each bin $N_{\rm gal}$.
+- photometric redshift uncertainty $\sigma_z$.
+- survey area $A$ (in square degrees).
+
+---
+
 # Forecast Formalism
 
 The BAO Fisher matrix is computed as a double integral over wavenumber $k$ and angle cosine $\mu$:
@@ -43,7 +54,7 @@ $$R(\mu)=\left(1+\beta\mu^2\right)^2 \exp[-k^2\mu^2\sigma_z^2].$$
 
 - the anisotropic nonlinear damping is
 
-$$\Sigma_{\rm nl}^2(\mu)=\Sigma_\parallel^2\mu^2+\Sigma_\perp^2(1-\mu^2)+\frac{1}{2}\Sigma_z^2,\quad \text{where}\quad \Sigma_\parallel=\Sigma_0 D(1+f)\quad \text{and}\quad\Sigma_\perp=\Sigma_0 D.$$
+$$\Sigma_{\rm nl}^2(\mu)=\Sigma_\parallel^2\mu^2+\Sigma_\perp^2(1-\mu^2)+\frac{1}{2}\Sigma_z^2,\quad \text{where}\quad \Sigma_\parallel=\Sigma_0 D(1+f),\quad\Sigma_\perp=\Sigma_0 D\quad\text{and}\quad\Sigma_z = \frac{c}{H(z)}\frac{r_d}{\chi(z)}\sigma_z.$$
 
 The correlation coefficient between radial and transverse modes is, then, computed as
 
@@ -52,3 +63,10 @@ $$r=\frac{F_{DH}}{\sqrt{F_{DD}F_{HH}}},$$
 and the angular BAO distance uncertainty is
 
 $$\sigma_D=\frac{1}{\sqrt{F_{DD}(1-r^2)}}.$$
+
+---
+
+# Requirements
+
+- numpy
+- cosmoprimo
