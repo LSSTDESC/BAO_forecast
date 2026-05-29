@@ -7,7 +7,7 @@ class BAOBin:
     z_max: float
     n_gal: float
     sigma_z: float
-    bias: float = 1.6
+    bias: float
 
 def GetSurvey(survey):
 
@@ -37,19 +37,21 @@ def GetSurvey(survey):
         z_min, z_max, dz = 0.2, 1.2, 0.2
         area = 12300
         nz = np.array([3.11, 4.29, 4.25, 3.59, 2.76]) * (area * 60**2)
-        sz = [0.03] * 5
+        sz = [0.03] * len(nz)
 
     elif survey == "LSST_Y10":
         z_min, z_max, dz = 0.2, 1.2, 0.1
         area = 14300
         nz = np.array([2.89, 4.09, 4.94, 5.45, 5.65, 5.61, 5.40, 5.07, 4.67, 4.23]) * (area * 60**2)
-        sz = [0.03] * 10
+        sz = [0.03] * len(nz)
 
     else:
         raise ValueError(
             f"Unknown survey '{survey}'. "
             f"Available: DES_Y1, DES_Y3, DES_Y6, LSST_Y1, LSST_Y10"
         )
+
+    bias = [1.6] * len(nz) # same value for all redshift bins, but it could be adjusted
 
     # -----------------------------------------------------
     # Build bins
@@ -63,6 +65,7 @@ def GetSurvey(survey):
             z_max=z_edges[i + 1],
             n_gal=nz[i],
             sigma_z=sz[i],
+            bias=bias[i],
         )
         for i in range(len(nz))
     ]
